@@ -1,0 +1,37 @@
+<section class="bg-gray-100">
+    <header class="bg-white shadow-sm py-2">
+        <div class="container mx-auto flex items-center justify-between px-4">
+            <div class="flex items-center space-x-2">
+                <i class="fas fa-search text-gray-400"></i>
+                <input class="border-none focus:outline-none text-gray-400" placeholder="Type to search..."
+                    type="text" />
+            </div>
+            <div class="flex items-center space-x-4">
+                <div class="relative">
+                    <i class="fas fa-cog text-gray-400"></i>
+                </div>
+                <div class="relative">
+                    <i class="fas fa-bell text-gray-400"></i>
+                    <span class="absolute top-0 right-0 inline-block w-2 h-2 bg-red-500 rounded-full"></span>
+                </div>
+                <div class="relative">
+                    <i class="fas fa-comment-dots text-gray-400"></i>
+                    <span class="absolute top-0 right-0 inline-block w-2 h-2 bg-red-500 rounded-full"></span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <div class="text-right">
+                        <p class="text-gray-700 font-medium">
+                            {{user.name}}
+                        </p>
+                        <p class="text-gray-400 text-sm">
+                            {{user.role}}
+                        </p>
+                    </div>
+                    <img alt="Profile picture of {{user.name}}" class="w-10 h-10 rounded-full" height="40"
+                        src="{{user.profilePicture}}" width="40" />
+                    <i class="fas fa-chevron-down text-gray-400"></i>
+                </div>
+            </div>
+        </div>
+    </header>
+</section>

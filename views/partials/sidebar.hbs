@@ -1,0 +1,23 @@
+<div class="sidebar col-md-2 bg-violet-900">
+    <h2 class="text-white text-center text-4xl mb-4 font-sans">May Bell</h2>
+    <hr class="border border-white border-1 mb-4">
+    <a href="/admin" id="dashboard-link" class="text-xl">Dashboard</a>
+    <a href="/admin/account" id="account-link" class="text-xl">Account Management</a>
+    <a href="/admin/product" id="movie-link" class="text-xl">Product Management</a>
+    <a href="/logout" id="logout-link" class="text-xl">Log out</a>
+</div>
+
+<script>
+    document.querySelectorAll('.sidebar a').forEach(link => {
+        if (link.href === window.location.href) {
+            link.classList.add('active');
+        }
+    });
+
+    document.querySelector('.sidebar').addEventListener('click', function (event) {
+        if (event.target.tagName === 'A') {
+            document.querySelectorAll('.sidebar a').forEach(link => link.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+    });
+</script>

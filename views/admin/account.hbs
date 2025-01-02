@@ -1,0 +1,236 @@
+<section>
+    <div class="content">
+        <h1 class="text-2xl font-bold mb-4">Account Management</h1>
+
+        <div class="container-admin">
+            <div class="filter-options flex justify-between items-center mb-4">
+                <div class="flex gap-2">
+                    <input type="text" id="filter-username" placeholder="Search by username..."
+                        class="filter border border-gray-300 rounded-md px-2 py-1 w-48">
+                    <input type="text" id="filter-email" placeholder="Search by email..."
+                        class="filter border border-gray-300 rounded-md px-2 py-1 w-48">
+                    <button id="search-button" class="text-white rounded-md">Search</button>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <label for="role" class="text-gray-700 font-bold">Role:</label>
+                    <select id="role" class="filter border border-gray-300 rounded-md px-2 py-1">
+                        <option value="all">All</option>
+                        <option value="user">User</option>
+                        <option value="admin">Admin</option>
+                    </select>
+
+                    <label for="sort" class="text-gray-700 font-bold">Sort by:</label>
+                    <select id="sort-by" class="filter border border-gray-300 rounded-md px-2 py-1 w-36">
+                        <option value="none">None</option>
+                        <option value="username">Username</option>
+                        <option value="email">Email</option>
+                        <option value="createdAt">Registration Time</option>
+                    </select>
+
+                    <select id="sort-order" class="filter border border-gray-300 rounded-md px-2 py-1">
+                        <option value="asc">Ascending</option>
+                        <option value="desc">Descending</option>
+                    </select>
+
+                    <button id="filter-button" class="text-white rounded-md">Filter</button>
+                </div>
+            </div>
+            <br>
+
+            <!-- Table -->
+            <div class="overflow-y-auto max-h-96">
+                <table id="user-db" class="table-auto w-full border-collapse border border-gray-300">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="border border-gray-500 px-4 py-2 w-1/4">Username</th>
+                            <th class="border border-gray-500 px-4 py-2 w-1/4">Email</th>
+                            <th class="border border-gray-500 px-4 py-2 w-1/6">Phone</th>
+                            <th class="border border-gray-500 px-4 py-2 w-1/18">Role</th>
+                            <th class="border border-gray-500 px-4 py-2 w-1/18">Status</th>
+                            <th class="border border-gray-500 px-4 py-2 w-1/4">Created At</th>
+                            <th class="border border-gray-500 px-4 py-2 w-1/18">
+                                <input type="checkbox" id="select-all" class="select-all-checkbox">
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{#each users}}
+                        <tr class="hover:bg-gray-50">
+                            <td class="border border-gray-300 px-4 py-2">{{this.username}}</td>
+                            <td class="border border-gray-300 px-4 py-2">{{this.email}}</td>
+                            <td class="border border-gray-300 px-4 py-2">{{this.phone}}</td>
+                            <td class="border border-gray-300 px-4 py-2">{{this.role}}</td>
+                            <td class="border border-gray-300 px-4 py-2">{{this.status}}</td>
+                            <td class="border border-gray-300 px-4 py-2">{{this.createdAt}}</td>
+                            <td class="border border-gray-300 px-4 py-2">
+                                <input type="checkbox" class="select-user-checkbox" data-id="{{this.id}}">
+                            </td>
+                        </tr>
+                        {{/each}}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="mt-4 flex justify-end gap-4">
+                <button id="block-selected"
+                    class="bg-red-500 text-white px-3 py-2 rounded-md hover:bg-red-600">Block</button>
+                <button id="unblock-selected"
+                    class="bg-green-500 text-white px-3 py-2 rounded-md hover:bg-green-600">Unblock</button>
+                <button id="delete-selected"
+                    class="bg-red-700 text-white px-3 py-2 rounded-md hover:bg-red-800">Delete</button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const fetchUsers = async (filters = {}) => {
+            const params = new URLSearchParams(filters);
+            const response = await fetch(`/admin/users?${params.toString()}`);
+            if (response.ok) {
+                const { users } = await response.json();
+                populateUserTable(users);
+            } else {
+                console.error("Error fetching users.");
+            }
+        };
+
+        const populateUserTable = (users) => {
+            const tbody = document.querySelector("#user-db tbody");
+            tbody.innerHTML = ""; // Clear existing rows
+
+            users.forEach((user) => {
+                const row = `
+                <tr>
+                    <td>${user.username}</td>
+                    <td>${user.email}</td>
+                    <td>${user.phone}</td>
+                    <td>${user.role}</td>                 
+                    <td>${user.status}</td>
+                    <td>${new Date(user.createdAt).toLocaleString('vi-VN')}</td>
+                    <td class="px-4 py-2">
+                        <input type="checkbox" class="select-user-checkbox" data-id="${user.id}">
+                    </td>
+                </tr>
+            `;
+                tbody.insertAdjacentHTML("beforeend", row);
+            });
+
+            assignActionListeners();
+        };
+
+        const assignActionListeners = () => {
+            document.querySelectorAll(".select-user-checkbox").forEach((checkbox) => {
+                checkbox.addEventListener("change", updateSelectAllCheckbox);
+            });
+
+            document.getElementById("select-all").addEventListener("change", toggleSelectAll);
+        };
+
+        const updateSelectAllCheckbox = () => {
+            const allCheckboxes = document.querySelectorAll(".select-user-checkbox");
+            const selectedCheckboxes = document.querySelectorAll(".select-user-checkbox:checked");
+            const selectAllCheckbox = document.getElementById("select-all");
+
+            selectAllCheckbox.checked = allCheckboxes.length === selectedCheckboxes.length;
+        };
+
+        const toggleSelectAll = (event) => {
+            const isChecked = event.target.checked;
+            document.querySelectorAll(".select-user-checkbox").forEach((checkbox) => {
+                checkbox.checked = isChecked;
+            });
+        };
+
+        const getSelectedUserIds = () => {
+            const selectedCheckboxes = document.querySelectorAll(".select-user-checkbox:checked");
+            return Array.from(selectedCheckboxes).map((checkbox) => checkbox.dataset.id);
+        };
+
+        document.getElementById("block-selected").addEventListener("click", async () => {
+            const selectedIds = getSelectedUserIds();
+            if (selectedIds.length === 0) return alert("No users selected");
+
+            const response = await fetch(`/admin/users/block`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ userIds: selectedIds }),
+            });
+
+            if (response.ok) {
+                alert("Selected users have been blocked.");
+                fetchUsers(); // Refresh the table
+            } else {
+                alert("Error blocking users.");
+            }
+        });
+
+        document.getElementById("unblock-selected").addEventListener("click", async () => {
+            const selectedIds = getSelectedUserIds();
+            if (selectedIds.length === 0) return alert("No users selected");
+
+            const response = await fetch(`/admin/users/unblock`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ userIds: selectedIds }),
+            });
+
+            if (response.ok) {
+                alert("Selected users have been unblocked.");
+                fetchUsers(); // Refresh the table
+            } else {
+                alert("Error unblocking users.");
+            }
+        });
+
+        document.getElementById("delete-selected").addEventListener("click", async () => {
+            const selectedIds = getSelectedUserIds();
+            if (selectedIds.length === 0) return alert("No users selected");
+
+            const response = await fetch(`/admin/users/delete`, {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ userIds: selectedIds }),
+            });
+
+            if (response.ok) {
+                alert("Selected users have been deleted.");
+                fetchUsers(); // Refresh the table
+            } else {
+                alert("Error deleting users.");
+            }
+        });
+
+        // Search Button Logic
+        document.getElementById("search-button").addEventListener("click", () => {
+            const username = document.getElementById("filter-username").value.trim();
+            const email = document.getElementById("filter-email").value.trim();
+
+            const filters = {};
+            if (username) filters.username = username;
+            if (email) filters.email = email;
+
+            fetchUsers(filters); // Fetch users based on search filters
+        });
+
+        // Filter Button Logic
+        document.getElementById("filter-button").addEventListener("click", () => {
+            const role = document.getElementById("role").value;
+            const sortBy = document.getElementById("sort-by").value;
+            const sortOrder = document.getElementById("sort-order").value;
+
+            const filters = {};
+            if (role && role !== "all") filters.role = role;
+            if (sortBy && sortBy !== "none") filters.sortBy = sortBy;
+            if (sortOrder) filters.sortOrder = sortOrder;
+
+            fetchUsers(filters); // Fetch users based on filter parameters
+        });
+
+        // Initial load (fetch all users)
+        fetchUsers();
+    });
+</script>
