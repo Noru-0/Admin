@@ -72,12 +72,15 @@
                 </table>
             </div>
 
+            <!-- Pagination Controls -->
+            <div id="pagination" class="flex justify-center mt-4 gap-2"></div>
+
             <!-- Action Buttons -->
             <div class="mt-4 flex justify-end gap-4">
-                <button id="block-selected"
-                    class="bg-red-500 text-white px-3 py-2 rounded-md hover:bg-red-600">Block</button>
                 <button id="unblock-selected"
                     class="bg-green-500 text-white px-3 py-2 rounded-md hover:bg-green-600">Unblock</button>
+                <button id="block-selected"
+                    class="bg-red-500 text-white px-3 py-2 rounded-md hover:bg-red-600">Block</button>
                 <button id="delete-selected"
                     class="bg-red-700 text-white px-3 py-2 rounded-md hover:bg-red-800">Delete</button>
             </div>
@@ -87,12 +90,14 @@
 
 <script>
     document.addEventListener("DOMContentLoaded", () => {
-        const fetchUsers = async (filters = {}) => {
+        const fetchUsers = async (filters = {}, page = 1) => {
+            filters.page = page;
             const params = new URLSearchParams(filters);
             const response = await fetch(`/admin/users?${params.toString()}`);
             if (response.ok) {
-                const { users } = await response.json();
+                const { users, totalPages } = await response.json();
                 populateUserTable(users);
+                renderPagination(totalPages, page, filters);
             } else {
                 console.error("Error fetching users.");
             }
@@ -120,6 +125,26 @@
             });
 
             assignActionListeners();
+        };
+
+        const renderPagination = (totalPages, currentPage, filters) => {
+            const paginationContainer = document.getElementById("pagination");
+            paginationContainer.innerHTML = ""; // Clear existing pagination controls
+
+            for (let i = 1; i <= totalPages; i++) {
+                const button = document.createElement("button");
+                button.textContent = i;
+                button.classList.add("px-3", "py-1", "border", "mx-1", "rounded");
+
+                if (i === currentPage) {
+                    button.classList.add("bg-blue-600", "text-white");
+                } else {
+                    button.classList.add("bg-white", "text-blue-600");
+                    button.addEventListener("click", () => fetchUsers(filters, i));
+                }
+
+                paginationContainer.appendChild(button);
+            }
         };
 
         const assignActionListeners = () => {

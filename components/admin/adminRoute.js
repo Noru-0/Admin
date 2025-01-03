@@ -12,7 +12,7 @@ router.get('/product', ensureAdmin, adminController.renderProduct);
 router.delete('/users/delete', ensureAdmin, adminController.deleteUser);
 router.patch('/users/block', ensureAdmin, adminController.blockUser);
 router.patch('/users/unblock', ensureAdmin, adminController.unblockUser);
-router.get('/users', ensureAdmin, adminController.getFilteredAndSortedUsers);
+router.get('/users', ensureAdmin, adminController.getUsers);
 
 // API support movie management
 router.get('/products', ensureAdmin, adminController.getProducts);

@@ -1,6 +1,7 @@
 var { PrismaClient } = require('@prisma/client');
 var prisma = new PrismaClient();
 const { cloudinary } = require('../../config/cloud');
+const { parse } = require('dotenv');
 
 const renderDashboard = (req, res) => {
   res.render('admin/dashboard', { title: 'Dashboard' });
@@ -46,6 +47,45 @@ const renderProduct = (req, res) => {
 };
 
 /* -----------------Users management----------------- */
+// Controller to get users with pagination
+const getUsers = async (req, res) => {
+  try {
+    const { username, email, role, sortBy, sortOrder, page = 1, pageSize = 6 } = req.query;
+
+    // Build query filters
+    const filter = {};
+    if (username) filter.username = { contains: username, mode: 'insensitive' }; // Search username
+    if (email) filter.email = { contains: email, mode: 'insensitive' };
+    if (role && role !== "all") filter.role = { contains: role, mode: 'insensitive' };
+
+    // Build sorting options
+    const sort = sortBy
+      ? { [sortBy]: sortOrder === "desc" ? 'desc' : 'asc' }
+      : undefined;
+
+    // Calculate pagination
+    const skip = (page - 1) * pageSize;
+
+    // Fetch total count for pagination
+    const totalCount = await prisma.user.count({ where: filter });
+
+    // Fetch users for the current page
+    const users = await prisma.user.findMany({
+      where: filter,
+      skip: parseInt(skip, 10),
+      take: parseInt(pageSize, 10),
+      orderBy: sort,
+    });
+
+    const totalPages = Math.ceil(totalCount / pageSize);
+
+    res.status(200).json({ users, totalPages });
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 // Block user
 const blockUser = async (req, res) => {
   try {
@@ -160,7 +200,7 @@ const getFilteredAndSortedUsers = async (req, res) => {
 // Controller to get filtered and sorted products
 const getProducts = async (req, res) => {
   try {
-    const { name, category, subcategory, brand, sortBy, sortOrder } = req.query;
+    const { name, category, subcategory, brand, sortBy, sortOrder, page = 1, pageSize = 5 } = req.query;
 
     // Prepare filters for Prisma query
     const filters = {};
@@ -179,23 +219,30 @@ const getProducts = async (req, res) => {
       }
     }
 
-
     // Filtering by brand (if provided)
     if (brand && brand !== 'all') {
       filters.brand = { contains: brand, mode: 'insensitive' };
     }
 
+    const sort = sortBy
+      ? { [sortBy]: sortOrder === 'desc' ? 'desc' : 'asc' }
+      : undefined;
+
+    const skip = (page - 1) * pageSize;
+
+    const totalCount = await prisma.product.count({ where: filters });
+
     // Fetch products from Prisma
     const products = await prisma.product.findMany({
       where: filters,
-      orderBy: sortBy
-        ? {
-          [sortBy]: sortOrder === 'desc' ? 'desc' : 'asc',
-        }
-        : undefined,
+      skip: parseInt(skip, 10),
+      take: parseInt(pageSize, 10),
+      orderBy: sort,
     });
 
-    res.status(200).json({ products });
+    const totalPages = Math.ceil(totalCount / pageSize);
+
+    res.status(200).json({ products, totalPages });
   } catch (error) {
     console.error('Error fetching products:', error);
     res.status(500).json({ message: 'Error fetching products' });
@@ -344,4 +391,4 @@ const deleteProduct = async (req, res) => {
   }
 };
 
-module.exports = { renderDashboard, renderAccount, renderProduct, blockUser, unblockUser, deleteUser, getFilteredAndSortedUsers, getProducts, getProductById, createProduct, updateProduct, deleteProduct };
+module.exports = { renderDashboard, renderAccount, renderProduct, blockUser, unblockUser, deleteUser, getFilteredAndSortedUsers, getProducts, getProductById, createProduct, updateProduct, deleteProduct, getUsers };

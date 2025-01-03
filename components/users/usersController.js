@@ -5,6 +5,7 @@ var { findUserByUsername, createUser, findUserByEmail } = require('./usersModel'
 var getLogin = (req, res) => {
   res.render("login", { layout: "main" });
 };
+
 var postLogin = (req, res, next) => {
   passport.authenticate('local', (err, user, info) => {
     if (err) {
@@ -14,6 +15,9 @@ var postLogin = (req, res, next) => {
     if (!user) {
       // `info.message` contains the error message set in `passportConfig.js`
       return res.render('login', { error: info.message, layout: 'main', username: req.body.username });
+    }
+    if (!user.status) {
+      return res.render('login', { error: 'Your account is inactive. Please contact support.', layout: 'main' });
     }
     req.logIn(user, (err) => {
       if (err) {

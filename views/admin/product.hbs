@@ -4,7 +4,7 @@
 
         <div class="container-admin">
             <!-- Filter Options -->
-            <div class="filter-options flex justify-between items-center mb-4">
+            <div class="filter-options flex justify-between items-center mb-8">
                 <!-- Search and Filter -->
                 <div class="flex items-center space-x-4">
                     <input type="text" id="filter-name" placeholder="Search by product name..."
@@ -52,7 +52,7 @@
             </div>
 
             <!-- product Table -->
-            <div class="overflow-y-auto max-h-96">
+            <div class="overflow-y-auto max-h-[40rem]">
                 <table id="product-db" class="table-auto w-full text-left border-collapse border border-gray-300">
                     <thead class="bg-gray-100 sticky top-0">
                         <tr>
@@ -88,11 +88,15 @@
                 </table>
             </div>
 
+            <!-- Action Buttons -->
             <div class="flex justify-between mt-4">
                 <div>
                     <button id="edit-product-button" class="text-white px-6 py-2 bg-yellow-500 rounded">Edit</button>
-                    <button id="delete-selected-button" class="text-white px-6 py-2 bg-red-500 rounded">Delete
-                        Selected</button>
+                    <button id="delete-selected-button" class="text-white px-6 py-2 bg-red-500 rounded">Delete</button>
+                </div>
+                <!-- Pagination Controls -->
+                <div id="pagination" class="flex justify-center gap-2">
+                    <!-- Pagination buttons will be rendered here -->
                 </div>
                 <button id="add-product-button" class="text-white px-6 py-2 rounded">Add Product</button>
             </div>
@@ -103,21 +107,18 @@
 <script>
     document.addEventListener("DOMContentLoaded", () => {
         // Fetch products with optional filters
-        const fetchproducts = async (filters = {}) => {
+        const fetchproducts = async (filters = {}, page = 1) => {
+            filters.page = page;
             const params = new URLSearchParams(filters);
-            console.log("Fetching products with filters:", params.toString());
-
             const response = await fetch(`/admin/products?${params.toString()}`);
             if (response.ok) {
-                const { products } = await response.json();
+                const { products, totalPages } = await response.json();
                 populateproductTable(products);
+                renderPagination(totalPages, page, filters);
             } else {
                 console.error("Error fetching products.");
             }
         };
-
-        // Initial load (fetch all products)
-        fetchproducts();
 
         // Populate the product table
         const populateproductTable = (products) => {
@@ -144,6 +145,27 @@
                 `;
                 tbody.insertAdjacentHTML("beforeend", row);
             });
+        };
+
+        // Render pagination controls
+        const renderPagination = (totalPages, currentPage, filters) => {
+            const paginationContainer = document.getElementById("pagination");
+            pagination.innerHTML = ""; // Clear existing controls
+
+            for (let i = 1; i <= totalPages; i++) {
+                const button = document.createElement("button");
+                button.textContent = i;
+                button.classList.add("px-3", "py-1", "border", "mx-1", "rounded");
+
+                if (i === currentPage) {
+                    button.classList.add("bg-blue-600", "text-white");
+                } else {
+                    button.classList.add("bg-white", "text-blue-600");
+                    button.addEventListener("click", () => fetchproducts(filters, i));
+                }
+
+                paginationContainer.appendChild(button);
+            }
         };
 
         // Add event listeners for buttons
@@ -239,7 +261,6 @@
             if (modifiedSubcategory && modifiedSubcategory !== "all") filters.subcategory = modifiedSubcategory;
             if (brand && brand !== "all") filters.brand = brand;
 
-            console.log("Filters applied:", filters); // Debugging line
             fetchproducts(filters);
         });
 
@@ -252,7 +273,6 @@
             if (sortBy && sortBy !== "none") filters.sortBy = sortBy;
             if (sortOrder) filters.sortOrder = sortOrder;
 
-            console.log("Sort applied:", filters); // Debugging line
             fetchproducts(filters);
         });
 
@@ -515,5 +535,8 @@
                 location.reload();
             });
         };
+
+        // Initial load (fetch all products)
+        fetchproducts();
     });
 </script>
