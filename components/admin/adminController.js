@@ -391,4 +391,24 @@ const deleteProduct = async (req, res) => {
   }
 };
 
-module.exports = { renderDashboard, renderAccount, renderProduct, blockUser, unblockUser, deleteUser, getFilteredAndSortedUsers, getProducts, getProductById, createProduct, updateProduct, deleteProduct, getUsers };
+const checkProductName = async (req, res) => {
+  try {
+    const { name } = req.query;
+    const product = await prisma.product.findFirst({
+      where: {
+        lowercaseName: name,
+      },
+    });
+
+    if (product) {
+      res.status(200).json({ isDuplicate: true });
+    } else {
+      res.status(404).json({ isDuplicate: false });
+    }
+  } catch (error) {
+    console.error('Error checking product name:', error);
+    res.status(500).json({ message: 'Error checking product name' });
+  }
+}
+
+module.exports = { renderDashboard, renderAccount, renderProduct, blockUser, unblockUser, deleteUser, getFilteredAndSortedUsers, getProducts, getProductById, createProduct, updateProduct, deleteProduct, getUsers, checkProductName };

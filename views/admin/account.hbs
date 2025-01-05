@@ -179,6 +179,11 @@
             const selectedIds = getSelectedUserIds();
             if (selectedIds.length === 0) return alert("No users selected");
 
+            const adminId = "{{user.id}}";
+            if (selectedIds.includes(adminId)) {
+                return alert("You cannot block yourself.");
+            }
+
             const response = await fetch(`/admin/users/block`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },

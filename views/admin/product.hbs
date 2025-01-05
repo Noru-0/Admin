@@ -358,6 +358,19 @@
             document.getElementById("edit-product-form").addEventListener("submit", async (event) => {
                 event.preventDefault();
 
+                const productName = document.getElementById("name").value.trim();
+
+                // Check if the product name has changed
+                if (productName !== product.name) {
+                    // Check if the product name already exists
+                    const isDuplicate = await checkProductNameDuplicate(productName);
+                    console.log("isDuplicate:", isDuplicate);
+                    if (isDuplicate) {
+                        alert('Product name already exists. Please choose a different name.');
+                        return; // Prevent form submission if the name is duplicate
+                    }
+                }
+
                 const updatedProduct = {
                     name: document.getElementById("name").value,
                     brand: document.getElementById("brand").value,
@@ -374,6 +387,12 @@
                     promotion: parseFloat(document.getElementById("promotion").value),
                     number: parseInt(document.getElementById("number").value, 10),
                 };
+
+                // Check if numeric values are greater than 0
+                if (updatedProduct.price <= 0 || updatedProduct.ram <= 0 || updatedProduct.disk <= 0 || updatedProduct.screenSize <= 0 || updatedProduct.refreshRate <= 0 || updatedProduct.promotion < 0 || updatedProduct.number <= 0) {
+                    alert("All numeric values must be greater than 0.");
+                    return;
+                }
 
                 const formData = new FormData();
                 for (const key in updatedProduct) {
@@ -495,22 +514,46 @@
             document.getElementById("add-product-form").addEventListener("submit", async (event) => {
                 event.preventDefault();
 
+                const productName = document.getElementById("name").value.trim();
+
+                // Check if the product name already exists
+                const isDuplicate = await checkProductNameDuplicate(productName);
+                console.log("isDuplicate:", isDuplicate);
+                if (isDuplicate) {
+                    alert('Product name already exists. Please choose a different name.');
+                    return; // Prevent form submission if the name is duplicate
+                }
+
+                const price = parseFloat(document.getElementById("price").value);
+                const ram = parseInt(document.getElementById("ram").value, 10);
+                const disk = parseInt(document.getElementById("disk").value, 10);
+                const screenSize = parseFloat(document.getElementById("screenSize").value);
+                const refreshRate = parseInt(document.getElementById("refreshRate").value, 10);
+                const promotion = parseFloat(document.getElementById("promotion").value);
+                const number = parseInt(document.getElementById("number").value, 10);
+
+                // Check if numeric values are greater than 0
+                if (price <= 0 || ram <= 0 || disk <= 0 || screenSize <= 0 || refreshRate <= 0 || promotion < 0 || number <= 0) {
+                    alert("All numeric values must be greater than 0.");
+                    return;
+                }
+
                 const formData = new FormData();
                 formData.append("name", document.getElementById("name").value);
                 formData.append("brand", document.getElementById("brand").value);
-                formData.append("price", document.getElementById("price").value);
+                formData.append("price", price);
                 formData.append("chipset", document.getElementById("chipset").value);
                 formData.append("os", document.getElementById("os").value);
-                formData.append("ram", document.getElementById("ram").value);
-                formData.append("disk", document.getElementById("disk").value);
-                formData.append("screenSize", document.getElementById("screenSize").value);
-                formData.append("refreshRate", document.getElementById("refreshRate").value);
+                formData.append("ram", ram);
+                formData.append("disk", disk);
+                formData.append("screenSize", screenSize);
+                formData.append("refreshRate", refreshRate);
                 formData.append("isFeatured", document.getElementById("isFeatured").checked);
                 formData.append("imageUrl", document.getElementById("imageUrl").files[0]);
                 formData.append("shortDescription", document.getElementById("shortDescription").value);
                 formData.append("longDescription", document.getElementById("longDescription").value);
-                formData.append("promotion", document.getElementById("promotion").value);
-                formData.append("number", document.getElementById("number").value);
+                formData.append("promotion", promotion);
+                formData.append("number", number);
 
                 try {
                     const response = await fetch('/admin/products', {
@@ -534,6 +577,24 @@
             document.getElementById("cancel-add").addEventListener("click", () => {
                 location.reload();
             });
+        };
+
+        // Function to check if the product name is a duplicate
+        const checkProductNameDuplicate = async (productName) => {
+            try {
+                const formatName = productName.toLowerCase().replace(/ /g, '-');
+                const response = await fetch(`/admin/products/check-name?name=${formatName}`);
+                if (response.ok) {
+                    const result = await response.json();
+                    return result.isDuplicate; // Assuming the response returns { isDuplicate: true/false }
+                } else {
+                    console.error("Error checking product name.");
+                    return false;
+                }
+            } catch (error) {
+                console.error("Error checking product name:", error);
+                return false;
+            }
         };
 
         // Initial load (fetch all products)

@@ -15,6 +15,7 @@ router.patch('/users/unblock', ensureAdmin, adminController.unblockUser);
 router.get('/users', ensureAdmin, adminController.getUsers);
 
 // API support movie management
+router.get('/products/check-name', ensureAdmin, adminController.checkProductName);
 router.get('/products', ensureAdmin, adminController.getProducts);
 router.post('/products', ensureAdmin, uploadProductImage.single('imageUrl'), adminController.createProduct);
 router.get('/products/:id', ensureAdmin, adminController.getProductById);
