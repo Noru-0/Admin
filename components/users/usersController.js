@@ -24,7 +24,7 @@ var postLogin = (req, res, next) => {
         console.error(err);
         return res.render('login', { error: 'Failed to log in. Please try again.', layout: 'main' });
       }
-      return res.redirect('/admin');
+      return res.redirect('/admin/dashboard');
     });
   })(req, res, next);
 };

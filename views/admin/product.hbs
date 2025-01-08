@@ -110,7 +110,7 @@
         const fetchproducts = async (filters = {}, page = 1) => {
             filters.page = page;
             const params = new URLSearchParams(filters);
-            const response = await fetch(`/admin/products?${params.toString()}`);
+            const response = await fetch(`/admin/product/products?${params.toString()}`);
             if (response.ok) {
                 const { products, totalPages } = await response.json();
                 populateproductTable(products);
@@ -175,7 +175,7 @@
                 const productId = selectedCheckbox.getAttribute("data-id");
 
                 // Fetch product details for editing
-                const response = await fetch(`/admin/products/${productId}`, { method: "GET" });
+                const response = await fetch(`/admin/product/products/${productId}`, { method: "GET" });
                 if (response.ok) {
                     const product = await response.json();
                     showEditForm(product);
@@ -195,7 +195,7 @@
                 console.log("Deleting products with IDs:", productIds);
                 if (confirm("Are you sure you want to delete the selected products?")) {
                     for (const productId of productIds) {
-                        const response = await fetch(`/admin/products/${productId}`, { method: "DELETE" });
+                        const response = await fetch(`/admin/product/products/${productId}`, { method: "DELETE" });
                         if (!response.ok) {
                             alert(`Error deleting product with ID: ${productId}`);
                         }
@@ -405,7 +405,7 @@
                 }
 
                 try {
-                    const response = await fetch(`/admin/products/${product.id}`, {
+                    const response = await fetch(`/admin/product/products/${product.id}`, {
                         method: "PUT",
                         body: formData,
                     });
@@ -556,7 +556,7 @@
                 formData.append("number", number);
 
                 try {
-                    const response = await fetch('/admin/products', {
+                    const response = await fetch('/admin/product/products', {
                         method: 'POST',
                         body: formData,
                     });
@@ -583,7 +583,7 @@
         const checkProductNameDuplicate = async (productName) => {
             try {
                 const formatName = productName.toLowerCase().replace(/ /g, '-');
-                const response = await fetch(`/admin/products/check-name?name=${formatName}`);
+                const response = await fetch(`/admin/product/products/check-name?name=${formatName}`);
                 if (response.ok) {
                     const result = await response.json();
                     return result.isDuplicate; // Assuming the response returns { isDuplicate: true/false }

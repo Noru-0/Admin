@@ -1,25 +1,13 @@
 const express = require('express');
-const adminController = require('./adminController');
 const router = express.Router();
-const { uploadProductImage } = require('../../config/cloud');
-const { ensureAdmin } = require('../../middlewares/authMiddleware');
+const dashboardRouter = require('./dashboard/dashboardRoute');
+const accountRouter = require('./account/accountRoute');
+const productRouter = require('./product/productRoute');
+const orderRouter = require('./order/orderRoute');
 
-router.get('/', ensureAdmin, adminController.renderDashboard);
-router.get('/account', ensureAdmin, adminController.renderAccount);
-router.get('/product', ensureAdmin, adminController.renderProduct);
-
-// API support account management
-router.delete('/users/delete', ensureAdmin, adminController.deleteUser);
-router.patch('/users/block', ensureAdmin, adminController.blockUser);
-router.patch('/users/unblock', ensureAdmin, adminController.unblockUser);
-router.get('/users', ensureAdmin, adminController.getUsers);
-
-// API support movie management
-router.get('/products/check-name', ensureAdmin, adminController.checkProductName);
-router.get('/products', ensureAdmin, adminController.getProducts);
-router.post('/products', ensureAdmin, uploadProductImage.single('imageUrl'), adminController.createProduct);
-router.get('/products/:id', ensureAdmin, adminController.getProductById);
-router.put('/products/:id', ensureAdmin, uploadProductImage.single('imageUrl'), adminController.updateProduct);
-router.delete('/products/:id', ensureAdmin, adminController.deleteProduct);
+router.use('/dashboard', dashboardRouter);
+router.use('/account', accountRouter);
+router.use('/product', productRouter);
+router.use('/order', orderRouter);
 
 module.exports = router;

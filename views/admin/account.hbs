@@ -93,7 +93,7 @@
         const fetchUsers = async (filters = {}, page = 1) => {
             filters.page = page;
             const params = new URLSearchParams(filters);
-            const response = await fetch(`/admin/users?${params.toString()}`);
+            const response = await fetch(`/admin/account/users?${params.toString()}`);
             if (response.ok) {
                 const { users, totalPages } = await response.json();
                 populateUserTable(users);
@@ -184,7 +184,7 @@
                 return alert("You cannot block yourself.");
             }
 
-            const response = await fetch(`/admin/users/block`, {
+            const response = await fetch(`/admin/account/users/block`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ userIds: selectedIds }),
@@ -202,7 +202,7 @@
             const selectedIds = getSelectedUserIds();
             if (selectedIds.length === 0) return alert("No users selected");
 
-            const response = await fetch(`/admin/users/unblock`, {
+            const response = await fetch(`/admin/account/users/unblock`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ userIds: selectedIds }),
@@ -220,7 +220,7 @@
             const selectedIds = getSelectedUserIds();
             if (selectedIds.length === 0) return alert("No users selected");
 
-            const response = await fetch(`/admin/users/delete`, {
+            const response = await fetch(`/admin/account/users/delete`, {
                 method: "DELETE",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ userIds: selectedIds }),
