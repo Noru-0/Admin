@@ -87,13 +87,6 @@ const createProduct = async (req, res) => {
         const lowercaseName = name.toLowerCase().replace(/ /g, "-");  // Convert all spaces to hyphens and name to lowercase for search
         const release_time = new Date();
 
-        let imageUrls = [];
-        if (req.files?.length) {
-            for (const file of req.files) {
-                imageUrls.push(file.path); // File paths are automatically uploaded via multer-storage-cloudinary
-            }
-        }
-
         const newProduct = await prisma.product.create({
             data: {
                 name,
@@ -112,12 +105,41 @@ const createProduct = async (req, res) => {
                 number: parseInt(number),
                 lowercaseName: lowercaseName,
                 release_time: release_time,
-                images: imageUrls,
-                imageUrl: imageUrls[0],
+                images: [], // Empty array to store image URLs
+                imageUrl: '', // Store the first image URL as the main image
             },
         });
 
-        res.status(201).json(newProduct);
+        const productId = newProduct.id;
+        let imageUrls = [];
+        // Upload ảnh lên thư mục tạm "default"
+        if (req.files?.length) {
+            for (const file of req.files) {
+                try {
+                    const uploadResponse = await cloudinary.uploader.upload(file.path, {
+                        folder: `product_folder/${productId}`, // Thư mục tạm
+                        allowed_formats: ['jpeg', 'png', 'jpg', 'gif'],
+                    });
+
+                    // Thêm URL ảnh mới vào mảng imageUrls
+                    imageUrls.push(uploadResponse.secure_url);
+                } catch (uploadError) {
+                    console.error('Error uploading or moving image:', uploadError);
+                    return res.status(500).json({ message: 'Error uploading images.' });
+                }
+            }
+        }
+
+        // Update product with image URLs
+        const updatedProduct = await prisma.product.update({
+            where: { id: productId },
+            data: {
+                images: imageUrls, // Lưu danh sách ảnh
+                imageUrl: imageUrls[0], // Ảnh đại diện (nếu có)
+            },
+        });
+
+        res.status(201).json(updatedProduct);
     } catch (error) {
         console.error('Error creating product:', error);
         res.status(500).json({ message: 'Error creating product' });
