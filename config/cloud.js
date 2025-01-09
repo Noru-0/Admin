@@ -1,31 +1,38 @@
-// module.exports = cloudinary;
 require('dotenv').config();
 const cloudinary = require('cloudinary').v2;
 const multer = require('multer');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 
 // Configure Cloudinary
-cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'dvnr2fqlk',
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
-});
+try {
+    cloudinary.config({
+        cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'dvnr2fqlk',
+        api_key: process.env.CLOUDINARY_API_KEY,
+        api_secret: process.env.CLOUDINARY_API_SECRET,
+    });
+    console.log('✅ Connected to Cloudinary successfully.');
+} catch (error) {
+    console.error('❌ Failed to connect to Cloudinary:', error);
+}
 
-console.log('✅ Connected to Cloudinary successfully.');
-
-// Multer storage configuration for Cloudinary
-const createCloudinaryStorage = (folder) => new CloudinaryStorage({
+// Dynamic Cloudinary storage configuration based on product ID
+const createDynamicCloudinaryStorage = (folderBase) => new CloudinaryStorage({
     cloudinary: cloudinary,
-    params: {
-        folder: folder,
-        allowed_formats: ['jpeg', 'png', 'jpg', 'gif'],
+    params: async (req, file) => {
+        const productId = req.params.id || 'default'; // Default folder if no ID is available
+        return {
+            folder: `${folderBase}/${productId}`, // Use dynamic folder naming
+            allowed_formats: ['jpeg', 'png', 'jpg', 'gif'],
+        };
     },
 });
 
-const storageMovie = createCloudinaryStorage('product_folder');
-const storageAvatar = createCloudinaryStorage('user_folder');
+// Create specific storages for products and avatars
+const storageProduct = createDynamicCloudinaryStorage('product_folder');
+const storageAvatar = createDynamicCloudinaryStorage('user_folder');
 
-const uploadProductImage = multer({ storage: storageMovie });
+// Initialize multer instances
+const uploadProductImage = multer({ storage: storageProduct });
 const uploadAvatar = multer({ storage: storageAvatar });
 
 module.exports = { cloudinary, uploadProductImage, uploadAvatar };

@@ -8,9 +8,9 @@ const { ensureAdmin } = require('../../../middlewares/authMiddleware');
 router.get('/', ensureAdmin, productController.renderProduct);
 router.get('/products/check-name', ensureAdmin, productController.checkProductName);
 router.get('/products', ensureAdmin, productController.getProducts);
-router.post('/products', ensureAdmin, uploadProductImage.single('imageUrl'), productController.createProduct);
+router.post('/products', ensureAdmin, uploadProductImage.array('images', 10), productController.createProduct);
 router.get('/products/:id', ensureAdmin, productController.getProductById);
-router.put('/products/:id', ensureAdmin, uploadProductImage.single('imageUrl'), productController.updateProduct);
+router.put('/products/:id', ensureAdmin, uploadProductImage.array('newImages', 10), productController.updateProduct);
 router.delete('/products/:id', ensureAdmin, productController.deleteProduct);
 
 module.exports = router;

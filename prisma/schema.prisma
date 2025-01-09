@@ -46,6 +46,7 @@ model Product {
   Cart                    Cart[]
   orderProducts           OrderProduct[]
   Review                  Review[]
+  images                  String[]
 }
 
 model Session {

@@ -325,9 +325,16 @@
                             <input type="checkbox" id="isFeatured" ${product.isFeatured ? "checked" : ""} class="ml-2">
                         </div>
                         <div class="form-group-product-manager mb-4">
-                            <label for="imageUrl" class="font-semibold">Image:</label>
-                            <input type="file" name="imageUrl" id="imageUrl" accept="image/*" class="w-full border border-gray-300 rounded-md px-2 py-1">
-                            ${product.imageUrl ? `<img src="${product.imageUrl}" alt="Current Image" class="mt-2 w-24 h-24 rounded-md">` : ""}
+                            <label for="images" class="font-semibold">Images:</label>
+                            <div id="current-images" class="flex gap-2 flex-wrap mb-2">
+                            ${product.images.map((image, index) => `
+                                <div class="relative">
+                                <img src="${image}" alt="Image ${index + 1}" class="w-24 h-24 rounded-md border">
+                                <button type="button" class="absolute top-0 right-0 bg-red-500 text-white text-xs px-1 py-0.5 rounded-full" onclick="removeImage(${index})">x</button>
+                                </div>
+                            `).join('')}
+                            </div>
+                            <input type="file" id="new-images" multiple accept="image/*" class="w-full border border-gray-300 rounded-md px-2 py-1">
                         </div>
                         <div class="form-group-product-manager mb-4">
                             <label for="shortDescription" class="font-semibold">Short Description:</label>
@@ -353,6 +360,73 @@
                 </div>
             </div>
             `;
+
+            // Track removed images and new images
+            let imagesToRemove = [];
+            let newImages = [];
+
+            // Function to remove an image from the product
+            window.removeImage = (index) => {
+                imagesToRemove.push(product.images[index]); // Track removed image
+                const updatedImages = [...product.images];
+                updatedImages.splice(index, 1); // Remove image from cloned array
+                product.images = updatedImages; // Update product images
+                // Update the UI for current images
+                const currentImagesContainer = document.getElementById("current-images");
+                currentImagesContainer.innerHTML = product.images.map((image, i) => `
+                    <div class="relative">
+                        <img src="${image}" alt="Image ${i + 1}" class="w-24 h-24 rounded-md border">
+                        <button type="button" class="absolute top-0 right-0 bg-red-500 text-white text-xs px-1 py-0.5 rounded-full" onclick="removeImage(${i})">x</button>
+                    </div>
+                `).join('');
+            };
+            console.log("imagesToRemove:", imagesToRemove);
+
+            // Handle new images
+            document.getElementById("new-images").addEventListener("change", (event) => {
+                const files = Array.from(event.target.files);
+
+                // Validate file types (e.g., allow only JPEG, PNG)
+                const validFiles = files.filter((file) =>
+                    ["image/jpeg", "image/png", "image/jpg"].includes(file.type)
+                );
+
+                if (validFiles.length !== files.length) {
+                    alert("Only JPEG, JPG, and PNG files are allowed.");
+                }
+
+                // Append valid files to newImages
+                newImages.push(...validFiles);
+
+                // Display selected images in the interface
+                const previewContainer = document.getElementById("current-images");
+                validFiles.forEach((file) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const imageElement = document.createElement("div");
+                        imageElement.classList.add("relative");
+
+                        imageElement.innerHTML = `
+                            <img src="${e.target.result}" alt="Preview Image" class="w-24 h-24 rounded-md border">
+                            <button type="button" class="absolute top-0 right-0 bg-red-500 text-white text-xs px-1 py-0.5 rounded-full">x</button>
+                        `;
+
+                        // Add functionality to remove the preview
+                        imageElement.querySelector("button").addEventListener("click", () => {
+                            const indexToRemove = newImages.findIndex(
+                                (item) => item === file
+                            );
+                            if (indexToRemove !== -1) {
+                                newImages.splice(indexToRemove, 1);
+                            }
+                            previewContainer.removeChild(imageElement);
+                        });
+
+                        previewContainer.appendChild(imageElement);
+                    };
+                    reader.readAsDataURL(file); // Convert image to base64 URL
+                });
+            });
 
             // Handle form submission
             document.getElementById("edit-product-form").addEventListener("submit", async (event) => {
@@ -386,29 +460,38 @@
                     longDescription: document.getElementById("longDescription").value,
                     promotion: parseFloat(document.getElementById("promotion").value),
                     number: parseInt(document.getElementById("number").value, 10),
+                    images: product.images
                 };
 
                 // Check if numeric values are greater than 0
-                if (updatedProduct.price <= 0 || updatedProduct.ram <= 0 || updatedProduct.disk <= 0 || updatedProduct.screenSize <= 0 || updatedProduct.refreshRate <= 0 || updatedProduct.promotion < 0 || updatedProduct.number <= 0) {
+                if (updatedProduct.price <= 0 || updatedProduct.ram <= 0 || updatedProduct.disk <= 0 || updatedProduct.screenSize <= 0 || updatedProduct.refreshRate <= 0 || updatedProduct.promotion < 0 || updatedProduct.number < 0) {
                     alert("All numeric values must be greater than 0.");
                     return;
                 }
 
                 const formData = new FormData();
                 for (const key in updatedProduct) {
-                    formData.append(key, updatedProduct[key]);
+                    if (key !== 'images') {
+                        formData.append(key, updatedProduct[key]);
+                    }
                 }
 
-                const fileInput = document.getElementById("imageUrl");
-                if (fileInput.files.length > 0) {
-                    formData.append("imageUrl", fileInput.files[0]);
-                }
+                // Add removed images
+                imagesToRemove.forEach((image) => {
+                    formData.append("removedImages", image);
+                });
+
+                // Add new images
+                newImages.forEach((file) => {
+                    formData.append("newImages", file);
+                });
 
                 try {
                     const response = await fetch(`/admin/product/products/${product.id}`, {
                         method: "PUT",
                         body: formData,
                     });
+                    console.log("response:", response);
 
                     if (response.ok) {
                         alert("Product updated successfully!");
@@ -483,7 +566,7 @@
                             </div>
                             <div class="form-group-product-manager mb-4 flex items-center">
                                 <label for="imageUrl" class="font-semibold w-1/5">Image:</label>
-                                <input type="file" name="imageUrl" id="imageUrl" accept="image/*" required class="w-full border border-gray-300 rounded-md px-2 py-1">
+                                <input type="file" name="images" id="images" accept="image/*" multiple class="w-full border border-gray-300 rounded-md px-2 py-1">
                             </div>
                             <div class="form-group-product-manager mb-4 flex items-center">
                                 <label for="shortDescription" class="font-semibold w-1/5">Short Description:</label>
@@ -549,11 +632,16 @@
                 formData.append("screenSize", screenSize);
                 formData.append("refreshRate", refreshRate);
                 formData.append("isFeatured", document.getElementById("isFeatured").checked);
-                formData.append("imageUrl", document.getElementById("imageUrl").files[0]);
                 formData.append("shortDescription", document.getElementById("shortDescription").value);
                 formData.append("longDescription", document.getElementById("longDescription").value);
                 formData.append("promotion", promotion);
                 formData.append("number", number);
+
+                // Add multiple images
+                const imageFiles = document.getElementById("images").files;
+                for (let i = 0; i < imageFiles.length; i++) {
+                    formData.append("images", imageFiles[i]); // Append each image file
+                }
 
                 try {
                     const response = await fetch('/admin/product/products', {
