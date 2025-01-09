@@ -19,16 +19,16 @@
                     <label for="filter-status" class="text-gray-700 font-bold">Status:</label>
                     <select id="filter-status" class="filter border border-gray-300 rounded-md px-2 py-1">
                         <option value="all">All</option>
-                        <option value="pending">Pending</option>
-                        <option value="processed">Processed</option>
-                        <option value="shipped">Shipped</option>
-                        <option value="delivered">Delivered</option>
-                        <option value="cancelled">Cancelled</option>
+                        <option value="Pending">Pending</option>
+                        <option value="Processed">Processed</option>
+                        <option value="Shipped">Shipped</option>
+                        <option value="Delivered">Delivered</option>
+                        <option value="Cancelled">Cancelled</option>
                     </select>
 
                     <label for="sort-by" class="text-gray-700 font-bold">Sort by:</label>
                     <select id="sort-by" class="filter border border-gray-300 rounded-md px-2 py-1 w-36">
-                        <option value="creationTime">Creation Time</option>
+                        <option value="createdAt">Creation Time</option>
                         <option value="customerName">Customer Name</option>
                     </select>
 
@@ -63,7 +63,7 @@
                             <td class="border border-gray-300 px-4 py-2">{{this.id}}</td>
                             <td class="border border-gray-300 px-4 py-2">{{this.customerName}}</td>
                             <td class="border border-gray-300 px-4 py-2">{{this.email}}</td>
-                            <td class="border border-gray-300 px-4 py-2">${{this.totalAmount}}</td>
+                            <td class="border border-gray-300 px-4 py-2">{{formatPrice this.totalAmount}}</td>
                             <td class="border border-gray-300 px-4 py-2">{{this.status}}</td>
                             <td class="border border-gray-300 px-4 py-2">{{this.createdAt}}</td>
                             <td class="border border-gray-300 px-4 py-2 flex gap-2">
@@ -84,5 +84,304 @@
             <!-- Pagination Controls -->
             <div id="pagination" class="flex justify-center mt-4 gap-2"></div>
         </div>
+
+        <!-- Modal for View Order -->
+        <div id="view-order-modal"
+            class="fixed inset-0 bg-gray-800 bg-opacity-50 hidden justify-center items-center p-4">
+            <div class="bg-white p-6 mt-12 rounded-md w-1/2 h-5/6 overflow-y-auto mx-auto my-auto">
+                <h2 class="text-2xl font-bold mb-8 text-center text-indigo-600">Order Details</h2>
+                <div id="view-order-details"></div>
+                <button id="close-view-modal"
+                    class="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-md mt-6 w-full">Close</button>
+            </div>
+        </div>
+
+        <!-- Modal for Update Status -->
+        <div id="update-status-modal"
+            class="fixed inset-0 bg-gray-800 bg-opacity-50 hidden justify-center items-center p-4">
+            <div class="bg-white p-6 rounded-md w-1/2 h-1/2 mx-auto my-auto">
+                <h2 class="text-xl font-bold mb-4">Update Order Status</h2>
+                <div id="update-status-content"></div>
+                <button id="close-update-modal" class="bg-red-500 text-white px-4 pt-2 rounded-md mt-4">Close</button>
+            </div>
+        </div>
     </div>
 </section>
+
+<script>
+    async function fetchOrders(filters) {
+        const query = new URLSearchParams(filters).toString();
+        const response = await fetch(`order/get-orders?${query}`);
+        const data = await response.json();
+        return data;
+    }
+
+    async function updateOrderStatus(orderId, status) {
+        await fetch(`order/update-status/${orderId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status }),
+        });
+    }
+
+    // Global state for filters and pagination
+    let currentPage = 1;
+    let filters = {
+        page: currentPage,
+        limit: 6,
+        status: 'all',
+        sortBy: 'createdAt',
+        sortOrder: 'asc',
+        search: '',
+    };
+
+    function formatPrice(price) {
+        if (isNaN(price)) return ''; // Kiểm tra nếu không phải là số
+        return price.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' });
+    }
+
+    // Hàm render bảng đơn hàng
+    function renderOrderTable(orders) {
+        const tableBody = document.querySelector('#order-table tbody');
+        tableBody.innerHTML = ''; // Clear table
+
+        orders.forEach((order) => {
+            const row = document.createElement('tr');
+            row.classList.add('hover:bg-gray-50');
+            row.innerHTML = `
+            <td class="border border-gray-300 px-4 py-2">${order.id}</td>
+            <td class="border border-gray-300 px-4 py-2">${order.user?.username || 'Guest'}</td>
+            <td class="border border-gray-300 px-4 py-2">${order.email}</td>
+            <td class="border border-gray-300 px-4 py-2">${formatPrice(order.totalAmount)}</td>
+            <td class="border border-gray-300 px-4 py-2">${order.orderStatus}</td>
+            <td class="border border-gray-300 px-4 py-2">${new Date(order.createdAt).toLocaleString()}</td>
+            <td class="border border-gray-300 px-4 py-2 flex gap-2">
+                <button data-id="${order.id}" class="view-details text-white px-2 py-1 rounded-md">
+                    View
+                </button>
+                <button data-id="${order.id}" class="update-status bg-green-500 text-white px-2 py-1 rounded-md hover:bg-green-600">
+                    Update Status
+                </button>
+            </td>
+        `;
+            tableBody.appendChild(row);
+        });
+    }
+
+    // Hàm render phân trang
+    function renderPagination(totalPages) {
+        const paginationDiv = document.getElementById('pagination');
+        paginationDiv.innerHTML = ''; // Clear pagination
+
+        for (let i = 1; i <= totalPages; i++) {
+            const pageButton = document.createElement('button');
+            pageButton.textContent = i;
+
+            // Add classes separately
+            pageButton.classList.add('border', 'border-gray-300', 'px-3', 'py-1', 'rounded-md');
+
+            // Conditionally add additional classes for the active page
+            if (i === currentPage) {
+                pageButton.classList.add('bg-blue-500', 'text-white');
+            } else {
+                pageButton.classList.add('bg-white');
+            }
+
+            // Add click event listener
+            pageButton.addEventListener('click', () => {
+                currentPage = i;
+                filters.page = currentPage;
+                loadOrders();
+            });
+
+            // Append the button to the pagination container
+            paginationDiv.appendChild(pageButton);
+        }
+    }
+
+    // Hàm tải dữ liệu đơn hàng từ API
+    async function loadOrders() {
+        try {
+            const data = await fetchOrders(filters);
+            renderOrderTable(data.orders);
+            const totalPages = Math.ceil(data.total / filters.limit);
+            renderPagination(totalPages);
+        } catch (error) {
+            console.error('Error fetching orders:', error);
+        }
+    }
+
+    // Hàm cập nhật giao diện xem chi tiết đơn hàng
+    function updateOrderDetailsView(order) {
+        const detailsDiv = document.getElementById('view-order-details');
+
+        detailsDiv.innerHTML = `
+        <div class="flex gap-8">
+            <!-- Order Information -->
+            <div class="w-1/2 border border-gray-300 rounded-md p-6 shadow-md">
+            <p class="font-semibold text-xl mb-4 text-indigo-600">Order Information</p>
+            <div class="mb-3">
+                <p><strong>Order #${order.id}</strong></p>
+                <p class="text-sm text-gray-500">Status: <span class="font-bold text-yellow-500">${order.orderStatus}</span></p>
+                <p class="text-sm text-gray-500">Time: ${new Date(order.createdAt).toLocaleString()}</p>
+            </div>
+            <div class="border-t border-gray-200 pt-4">
+                <p class="font-semibold text-lg mb-2">Address Information</p>
+                <p><strong>Address:</strong> ${order.address || 'N/A'}</p>
+                <p><strong>Email:</strong> ${order.email}</p>
+            </div>
+            <div class="border-t border-gray-200 pt-4">
+                <p class="font-semibold text-lg mb-2">Payment Information</p>
+                <p><strong>Payment Method:</strong> ${order.paymentMethod || 'N/A'}</p>
+                <p><strong>Card Holder:</strong> ${order.cardHolder || 'N/A'}</p>
+                <p><strong>Card Number:</strong> ${order.cardNumber ? order.cardNumber.replace(/\d(?=\d{4})/g, "*") : 'N/A'}</p>
+            </div>
+            </div>
+
+            <!-- Order Summary -->
+            <div class="w-1/2 border border-gray-300 rounded-md p-6 shadow-md">
+            <p class="font-semibold text-xl mb-4 text-indigo-600">Order Summary</p>
+            <div class="flex justify-between text-sm text-gray-600 mb-2">
+                <p>Subtotal</p>
+                <p><span class="font-bold">${formatPrice(order.totalAmount - order.shippingFee)}</span> VND</p>
+            </div>
+            <div class="flex justify-between text-sm text-gray-600 mb-2">
+                <p>Shipping Fee</p>
+                <p><span class="font-bold">${formatPrice(order.shippingFee)}</span> VND</p>
+            </div>
+            <div class="flex justify-between text-xl text-gray-900">
+                <p class="font-bold">Total</p>
+                <p><span class="font-bold text-indigo-600">${formatPrice(order.totalAmount)}</span> VND</p>
+            </div>
+            </div>
+        </div>
+
+        <!-- Product Details -->
+        <div class="mt-10">
+            <p class="font-semibold text-xl mb-4 text-indigo-600">Product Details</p>
+            ${order.orderProducts.map(orderProduct => `
+                <div class="flex items-center mb-4 p-4 border border-gray-300 rounded-md shadow-sm hover:shadow-lg">
+                    <img class="w-24 h-24 object-cover rounded-md" src="${orderProduct.product.imageUrl}" alt="${orderProduct.product.name}" />
+                    <div class="ml-4 flex-1">
+                        <p class="font-semibold text-lg text-gray-900">${orderProduct.product.name}</p>
+                        <p class="text-sm text-gray-500">${orderProduct.product.shortDescription}</p>
+                        
+                        <!-- Show discount if exists -->
+                        ${orderProduct.product.promotion ? `
+                            <div class="mt-2 flex items-center gap-2">
+                                <p class="text-sm text-red-500 line-through">${formatPrice(orderProduct.product.price)} VND</p>
+                                <p class="text-lg font-bold text-violet-900">${formatPrice(orderProduct.product.price * ((100 - orderProduct.product.promotion) / 100) * orderProduct.quantity)} VND</p>
+                                <p class="text-sm text-green-500">-${orderProduct.product.promotion}% Discount</p>
+                            </div>
+                        ` : `
+                            <div class="mt-2 flex justify-between items-center">
+                                <p class="text-lg font-bold text-violet-900">${formatPrice(orderProduct.product.price * orderProduct.quantity)} VND</p>
+                            </div>
+                        `}
+                        <p class="text-sm text-gray-500">Quantity: ${orderProduct.quantity}</p>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+    }
+
+    // Hàm mở modal xem chi tiết đơn hàng
+    function openViewOrderModal(orderId) {
+        const modal = document.getElementById('view-order-modal');
+        const detailsDiv = document.getElementById('view-order-details');
+        detailsDiv.innerHTML = '<p>Loading...</p>'; // Hiển thị trạng thái loading
+
+        fetch(`/admin/order/get-order-details/${orderId}`)
+            .then(response => {
+                if (!response.ok) throw new Error('Failed to fetch order details');
+                console.log(response);
+                return response.json();
+            })
+            .then(order => {
+                updateOrderDetailsView(order); // Cập nhật giao diện với dữ liệu đơn hàng
+            })
+            .catch(error => {
+                console.error(error);
+                detailsDiv.innerHTML = '<p>Error fetching order details. Please try again later.</p>';
+            });
+
+        modal.classList.remove('hidden');
+    }
+
+    // Hàm mở modal cập nhật trạng thái đơn hàng
+    function openUpdateStatusModal(orderId) {
+        const modal = document.getElementById('update-status-modal');
+        const contentDiv = document.getElementById('update-status-content');
+
+        // Tạo dropdown để người dùng chọn trạng thái mới
+        contentDiv.innerHTML = `
+            <label for="new-status" class="block font-bold">New Status:</label>
+            <select id="new-status" class="border border-gray-300 rounded-md px-2 py-1 mb-4 w-full">
+                <option value="Pending">Pending</option>
+                <option value="Processed">Processed</option>
+                <option value="Shipped">Shipped</option>
+                <option value="Delivered">Delivered</option>
+                <option value="Cancelled">Cancelled</option>
+            </select>
+            <button id="update-status-button" class="bg-blue-500 text-white px-4 py-2 rounded-md w-full">Update</button>
+        `;
+
+        // Gắn sự kiện cho nút "Update"
+        document.getElementById('update-status-button').addEventListener('click', function () {
+            const newStatus = document.getElementById('new-status').value;
+            updateOrderStatus(orderId, newStatus).then(() => {
+                alert('Order status updated successfully!');
+                loadOrders(); // Tải lại danh sách đơn hàng sau khi cập nhật
+                modal.classList.remove('show');
+            }).catch(error => {
+                console.error('Error updating order status:', error);
+                alert('Failed to update status.');
+            });
+        });
+
+        // Hiển thị modal
+        modal.classList.remove('hidden');
+    }
+
+    // Đóng modal khi nhấn nút Close
+    document.getElementById('close-view-modal').addEventListener('click', () => {
+        document.getElementById('view-order-modal').classList.add('hidden');
+    });
+
+    document.getElementById('close-update-modal').addEventListener('click', () => {
+        document.getElementById('update-status-modal').classList.add('hidden');
+    });
+
+
+    // Gắn sự kiện cho nút "View" và "Update Status"
+    document.addEventListener('click', (event) => {
+        if (event.target.classList.contains('view-details')) {
+            const orderId = event.target.getAttribute('data-id');
+            openViewOrderModal(orderId);
+        }
+        if (event.target.classList.contains('update-status')) {
+            const orderId = event.target.getAttribute('data-id');
+            openUpdateStatusModal(orderId);
+        }
+    });
+
+    // Gắn sự kiện cho nút lọc
+    document.getElementById('filter-button').addEventListener('click', () => {
+        const status = document.getElementById('filter-status').value;
+        const sortBy = document.getElementById('sort-by').value;
+        const sortOrder = document.getElementById('sort-order').value;
+        filters = { ...filters, status, sortBy, sortOrder };
+        loadOrders();
+    });
+
+    // Gắn sự kiện cho nút tìm kiếm
+    document.getElementById('search-button').addEventListener('click', () => {
+        const search = document.getElementById('filter-order-id').value || document.getElementById('filter-customer-name').value;
+        filters.search = search;
+        loadOrders();
+    });
+
+    // Load dữ liệu đơn hàng ban đầu
+    loadOrders();
+</script>

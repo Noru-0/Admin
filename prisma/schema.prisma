@@ -10,12 +10,16 @@ datasource db {
 model User {
   id        Int      @id @default(autoincrement())
   username  String   @unique
-  email     String   @unique
-  password  String
-  phone     String
+  email     String
+  password  String?
+  phone     String?
   createdAt DateTime @default(now())
   status    Boolean  @default(true)
   role      String   @default("user")
+  resetPasswordToken    String?
+  resetPasswordExpires  DateTime?
+  googleId   String?
+  Order     Order[]
 }
 
 model Product {
@@ -37,6 +41,8 @@ model Product {
   number                  Int
   lowercaseName           String @unique 
   release_time            DateTime 
+  Cart                    Cart[]
+  orderProducts           OrderProduct[]
 }
 
 model Session {
@@ -46,4 +52,46 @@ model Session {
   expire    DateTime
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Cart {
+  id        Int     @id @default(autoincrement())
+  userId    Int? // Nullable for guest users
+  sessionId String? // Used for guest users
+  productId Int
+  quantity  Int     @default(1)
+  Product   Product @relation(fields: [productId], references: [id])
+}
+
+model Order {
+  id             Int            @id @default(autoincrement())
+  userId         Int? // For registered users
+  sessionId      String? // For guest users
+  user           User?          @relation(fields: [userId], references: [id])
+  orderProducts  OrderProduct[]
+  deliveryMethod String
+  paymentMethod  String
+  totalAmount    Float
+  shippingFee    Float
+  address        String
+  email          String
+  comment        String?
+  cardNumber     String
+  cardHolder     String
+  cardExpire     String
+  cardCVV        String
+  orderStatus    String         @default("Pending")
+  createdAt      DateTime       @default(now())
+}
+
+model OrderProduct {
+  id        Int @id @default(autoincrement())
+  orderId   Int
+  productId Int
+  quantity  Int
+
+  order   Order   @relation(fields: [orderId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+
+  @@unique([orderId, productId]) // Ensure unique combinations of orders and products
 }

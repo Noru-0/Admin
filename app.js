@@ -1,17 +1,17 @@
-var createError = require('http-errors');
-var express = require('express');
-var path = require('path');
-var { PrismaClient } = require("@prisma/client");
-var cookieParser = require('cookie-parser');
-var logger = require('morgan');
-var session = require('express-session');
-var passport = require('./config/passport');
-var PrismaSessionStore = require('./prismaSessionStore');
-var dotenv = require('dotenv').config()
-var prismaStore = new PrismaSessionStore();
-var prisma = new PrismaClient();
+const createError = require('http-errors');
+const express = require('express');
+const path = require('path');
+const { PrismaClient } = require("@prisma/client");
+const cookieParser = require('cookie-parser');
+const logger = require('morgan');
+const session = require('express-session');
+const passport = require('./config/passport');
+const PrismaSessionStore = require('./prismaSessionStore');
+require('dotenv').config();
+const prismaStore = new PrismaSessionStore();
+const prisma = new PrismaClient();
 
-var hbs = require('hbs');
+const hbs = require('hbs');
 hbs.registerHelper('formatName', function (name) {
     return name.toLowerCase().replace(/ /g, '-');
 });
@@ -19,7 +19,7 @@ hbs.registerHelper('formatName', function (name) {
 const usersRouter = require('./components/users/usersRoute');
 const adminRouter = require('./components/admin/adminRoute');
 
-var app = express();
+const app = express();
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
