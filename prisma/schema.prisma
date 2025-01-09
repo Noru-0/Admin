@@ -19,7 +19,9 @@ model User {
   resetPasswordToken    String?
   resetPasswordExpires  DateTime?
   googleId   String?
+  avatar    String?  @default("/img/default-avatar.png")
   Order     Order[]
+  Review   Review[]
 }
 
 model Product {
@@ -43,6 +45,7 @@ model Product {
   release_time            DateTime 
   Cart                    Cart[]
   orderProducts           OrderProduct[]
+  Review                  Review[]
 }
 
 model Session {
@@ -94,4 +97,15 @@ model OrderProduct {
   product Product @relation(fields: [productId], references: [id])
 
   @@unique([orderId, productId]) // Ensure unique combinations of orders and products
+}
+
+model Review {
+  id          Int       @id   @default(autoincrement())
+  username    String
+  id_product  Int
+  review      String 
+  created_at   DateTime  @default(now())
+
+  product     Product   @relation(fields: [id_product], references: [id])
+  user        User      @relation(fields: [username], references: [username])
 }
