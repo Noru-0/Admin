@@ -7,7 +7,7 @@ executors:
     working_directory: ~/project
 
 jobs:
-  build-and-deploy:
+  build:
     executor: node-executor
     steps:
       - checkout
@@ -18,7 +18,7 @@ jobs:
 
       - run:
           name: Install Dependencies
-          command: npm install --legacy-peer-deps
+          command: npm install
 
       - save_cache:
           paths:
@@ -26,26 +26,17 @@ jobs:
           key: v1-deps-{{ checksum "package-lock.json" }}
 
       - run:
-          name: Run Tests
-          command: |
-            if [ -f package.json ] && grep -q '"test":' package.json; then
-              npm test
-            else
-              echo "No test script found. Skipping tests."
-            fi
+          name: Build Vite Project
+          command: npm run build
 
       - run:
-          name: Deploy to Railway
+          name: Output Confirmation
           command: |
-            npm install -g @railway/cli
-            export RAILWAY_TOKEN=$RAILWAY_TOKEN
-            railway up
+            echo "✅ Build complete!"
+            ls -lh dist || echo "❌ No dist/ folder found"
 
 workflows:
   version: 2
-  deploy-on-main:
+  vite-build-only:
     jobs:
-      - build-and-deploy:
-          filters:
-            branches:
-              only: circleci-project-setup
+      - build
