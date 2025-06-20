@@ -38,8 +38,9 @@ jobs:
           name: Deploy to Railway
           command: |
             npm install -g @railway/cli
-            railway login --token $RAILWAY_TOKEN
             railway up
+          environment:
+            RAILWAY_TOKEN: $RAILWAY_TOKEN
 
 workflows:
   version: 2
