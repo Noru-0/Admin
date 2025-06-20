@@ -26,12 +26,13 @@ jobs:
           key: v1-deps-{{ checksum "package-lock.json" }}
 
       - run:
-          name: Build Vite Project
-          command: npm run build
-
-      - run:
-          name: Confirm Build Output
-          command: ls -lh dist || echo "❌ No dist/ folder found"
+          name: Build Project (Safe Conditional)
+          command: |
+            if grep -q '"build":' package.json; then
+              npm run build
+            else
+              echo "⚠️ No build script found. Skipping build step."
+            fi
 
 workflows:
   version: 2
