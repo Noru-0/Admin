@@ -17,8 +17,8 @@ jobs:
             - v1-deps-{{ checksum "package-lock.json" }}
 
       - run:
-          name: Install Dependencies
-          command: npm install
+          name: Install Dependencies (Force Peer Resolution)
+          command: npm install --legacy-peer-deps
 
       - save_cache:
           paths:
@@ -30,10 +30,8 @@ jobs:
           command: npm run build
 
       - run:
-          name: Output Confirmation
-          command: |
-            echo "✅ Build complete!"
-            ls -lh dist || echo "❌ No dist/ folder found"
+          name: Confirm Build Output
+          command: ls -lh dist || echo "❌ No dist/ folder found"
 
 workflows:
   version: 2
