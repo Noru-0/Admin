@@ -1,0 +1,10 @@
+{
+  "build": {
+    "installCommand": "npm install --legacy-peer-deps",
+    "startCommand": "node bin/www"
+  }, 
+  "scripts": {
+  "start": "node bin/www"
+}
+
+}
